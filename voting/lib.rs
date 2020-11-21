@@ -6,12 +6,14 @@ use ink_lang as ink;
 mod voting {
 	use ink_prelude::vec::Vec;
 	use ink_storage::collections::{HashMap as StorageHashMap, Vec as StorageVec};
-
+	// 定义持久化变量
+	// votes_received: 每个用户获取的投票数量
+	// candidate_list: 可被投票的用户列表
+	// in_candidate_list: 冗余信息用于快速判断某个用户是否在可投票列表中
 	#[ink(storage)]
 	pub struct Voting {
 		votes_received: StorageHashMap<AccountId, u32>,
 		candidate_list: StorageVec<AccountId>,
-		// Redundant information to speed up the check whether a candidate is in candidate_list
 		in_candidate_list: StorageHashMap<AccountId, ()>,
 	}
 
@@ -21,7 +23,7 @@ mod voting {
 		candidate_list: Vec<AccountId>,
 		current_vote: Vec<u32>,
 	}
-
+	// 投票触发事件定义
 	#[ink(event)]
 	pub struct VoteEvent {
 		#[ink(topic)]
@@ -44,17 +46,20 @@ mod voting {
 			}
 		}
 
+		// 获取可被投票的用户数量
 		#[ink(message)]
 		pub fn get_candidates_len(&mut self) -> u32 {
 			self.candidate_list.len()
 		}
 
+		// 获取可被投票的用户
 		#[ink(message)]
 		pub fn get_candidates(&mut self) -> Vec<AccountId> {
 			let lists: Vec<_> = self.candidate_list.iter().copied().collect();
 			lists
 		}
 
+		// 获取当前各用户投票票数状态
 		#[ink(message)]
 		pub fn get_current_votes(&mut self) -> CurrentVote {
 			let candidate_list: Vec<_> = self.candidate_list.iter().copied().collect();
@@ -68,14 +73,7 @@ mod voting {
 			}
 		}
 
-		// #[ink(message)]
-		// pub fn add_candidate(&mut self, candidate: AccountId) {
-		// 	let check = self.valid_candidate(candidate.clone());
-		// 	if !check {
-		// 		self.candidate_list.push(candidate);
-		// 	}
-		// }
-
+		// 投票
 		#[ink(message)]
 		pub fn vote_candidate(&mut self, candidate: AccountId) -> bool {
 			let ret: bool = self.vote_candidate_without_event(candidate);
@@ -101,11 +99,13 @@ mod voting {
 			true
 		}
 
+		// 获取某用户被投票的数量
 		#[ink(message)]
 		pub fn total_votes_for(&self, candidate: AccountId) -> u32 {
 			self.my_value_or_zero(candidate)
 		}
 
+		// 内部辅助函数用户确认某用户是否被存在candidate_list中
 		fn valid_candidate(&self, candidate: AccountId) -> bool {
 			for x in self.candidate_list.into_iter() {
 				if *x == candidate {
@@ -115,6 +115,7 @@ mod voting {
 			return false;
 		}
 
+		// 内部辅助函数用户获取某用户的投票数量
 		fn my_value_or_zero(&self, of: AccountId) -> u32 {
 			let value = self.votes_received.get(&of).unwrap_or(&0);
 			*value
