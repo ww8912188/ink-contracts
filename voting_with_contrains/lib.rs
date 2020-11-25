@@ -161,21 +161,21 @@ mod voting {
 			if !self.in_candidate_list.contains_key(&candidate) {
 				return false;
 			}
-			// 2. 确认票数够
+			// 2. 确认投票人有足够的票数
 			let ticket_num = self.voter_ticket_balance(owner);
 			if ticket_num < amout {
 				return false;
 			}
 
-			// 3. voter ticket数量减少, owner选中的candidate list更新
+			// 3. 投票者票数减少
 			self.voter_balance.entry(owner).and_modify(|v| *v -= amout);
-			// 4. 更新voter投票数组
+			// 4. 更新voter
 			self
 				.vote_num
 				.entry((owner, candidate))
 				.and_modify(|v| *v += amout)
 				.or_insert(amout);
-			// 5. candidate票数增加
+			// 5. 候选人票数增加
 			self
 				.votes_received
 				.entry(candidate)
